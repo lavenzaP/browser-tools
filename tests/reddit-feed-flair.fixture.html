@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Reddit Feed Flair Userscript Fixture</title>
+    <style>
+      body {
+        margin: 24px;
+        font-family: system-ui, sans-serif;
+      }
+
+      shreddit-post {
+        display: block;
+        max-width: 640px;
+        margin-bottom: 18px;
+        padding: 16px;
+        border: 1px solid #d0d7de;
+      }
+
+      h2 {
+        margin: 8px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <shreddit-post
+      id="t3_fixturequestion"
+      post-title="Question post"
+      permalink="/r/example/comments/fixturequestion/question_post/"
+      link-flair-text="Question"
+    >
+      <div slot="credit-bar">r/example</div>
+      <h2 slot="title">Question post</h2>
+      <p slot="text-body">This post should disappear when the word question is added.</p>
+    </shreddit-post>
+
+    <shreddit-post
+      id="t3_fixtureart"
+      post-title="Art post"
+      permalink="/r/example/comments/fixtureart/art_post/"
+      link-flair-text="Art"
+    >
+      <div slot="credit-bar">r/example</div>
+      <h2 slot="title">Art post</h2>
+      <p slot="text-body">This post should remain visible when only question is hidden.</p>
+    </shreddit-post>
+
+    <script src="../reddit-feed-flair.user.js"></script>
+  </body>
+</html>

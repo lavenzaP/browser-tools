@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Reddit Image Viewer Userscript Fixture</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0f0f10;
+        color: #f4f4f5;
+        font-family: system-ui, sans-serif;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
+        gap: 16px;
+        max-width: 1080px;
+        margin: 48px auto;
+        padding: 0 20px;
+      }
+
+      shreddit-post,
+      article {
+        display: block;
+        overflow: hidden;
+        border: 1px solid #2b2b30;
+        border-radius: 8px;
+        background: #171719;
+      }
+
+      img {
+        display: block;
+        width: 100%;
+        height: 220px;
+        object-fit: cover;
+      }
+
+      h2,
+      p {
+        margin: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <shreddit-post
+        id="t3_fixturelake"
+        post-title="Moraine Lake, Banff National Park [OC]"
+        subreddit-prefixed-name="r/EarthPorn"
+        author="landscape_love"
+        score="12400"
+        comment-count="162"
+        permalink="/r/EarthPorn/comments/fixturelake/moraine_lake/"
+      >
+        <a href="/r/EarthPorn/comments/fixturelake/moraine_lake/">
+          <img alt="Moraine Lake" src="https://picsum.photos/id/1018/1400/900.jpg">
+        </a>
+        <h2 slot="title">Moraine Lake, Banff National Park [OC]</h2>
+      </shreddit-post>
+
+      <shreddit-post
+        id="t3_fixturecity"
+        post-title="Sunset over the city"
+        subreddit-prefixed-name="r/cityporn"
+        author="urban_eye"
+        score="15200"
+        comment-count="212"
+        permalink="/r/cityporn/comments/fixturecity/sunset/"
+      >
+        <img alt="City skyline" src="https://picsum.photos/id/1019/1400/900.jpg">
+        <h2 slot="title">Sunset over the city</h2>
+      </shreddit-post>
+
+      <article id="t3_fixturefood">
+        <a href="/r/food/comments/fixturefood/pancakes/">
+          <img alt="Pancakes" src="https://picsum.photos/id/292/1400/900.jpg">
+        </a>
+        <h2>Pancakes with berries</h2>
+        <p>r/food 3.7k upvotes 42 comments</p>
+      </article>
+    </main>
+
+    <script src="../universal-image-click-menu.user.js"></script>
+    <script src="../reddit-image-viewer.user.js"></script>
+  </body>
+</html>
