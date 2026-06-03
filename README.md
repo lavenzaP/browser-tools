@@ -52,9 +52,10 @@ The scripts include `@updateURL` and `@downloadURL` metadata, so supported users
 `universal-image-click-menu.user.js` adds a compact left-click image action pad and in-page viewer to large images on most websites.
 
 - Opens a viewer with previous/next navigation, zoom, pan, and original-image open.
+- Opens the selected original image or media directly from the action pad.
 - Scopes gallery collection to the clicked article or content area when possible.
 - Filters lazy-load placeholders and hidden or transparent images.
-- Lets users hide nearby floating UI and exclude specific images or sites.
+- Lets users exclude specific images or sites.
 - Does not provide image download or bulk-download menu actions.
 - Does not use cross-origin request bypasses or external proxy services.
 - Reddit is disabled by default so Reddit-specific scripts can handle Reddit pages directly.

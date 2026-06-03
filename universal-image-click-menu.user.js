@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Universal Image Click Menu
 // @namespace    https://codex.local/universal-image-click-menu
-// @version      0.5.12
-// @description  Add a compact image action pad with viewer, floating UI hiding, and image/site exclusions.
+// @version      0.5.13
+// @description  Add a compact image action pad with viewer, original-media opening, and image/site exclusions.
 // @author       lavenzaP
 // @license      MIT
 // @homepageURL  https://github.com/lavenzaP/browser-tools
@@ -47,8 +47,6 @@
     viewer: null,
     galleryImages: [],
     galleryIndex: 0,
-    hiddenFloating: [],
-    restoreButton: null,
     zoom: 1,
     panX: 0,
     panY: 0,
@@ -70,7 +68,6 @@
   const STYLE_TEXT = `
     #uicm-menu,
     #uicm-viewer,
-    #uicm-restore-floating,
     #uicm-settings {
       box-sizing: border-box;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -172,6 +169,10 @@
       border-color: rgba(251, 191, 36, 0.32);
     }
 
+    #uicm-menu button[data-uicm-menu-action="original"] {
+      border-color: rgba(56, 189, 248, 0.34);
+    }
+
     #uicm-menu button[data-uicm-menu-action="settings"] {
       border-color: rgba(129, 140, 248, 0.34);
     }
@@ -190,7 +191,7 @@
       color: #a7f3d0;
     }
 
-    #uicm-menu button[data-uicm-menu-action="hide"] .uicm-icon {
+    #uicm-menu button[data-uicm-menu-action="original"] .uicm-icon {
       color: #7dd3fc;
     }
 
@@ -258,8 +259,7 @@
       color: #bfdbfe;
     }
 
-    #uicm-viewer-toolbar button,
-    #uicm-restore-floating {
+    #uicm-viewer-toolbar button {
       min-width: 36px;
       min-height: 34px;
       border: 1px solid rgba(248, 250, 252, 0.18);
@@ -271,9 +271,7 @@
     }
 
     #uicm-viewer-toolbar button:hover,
-    #uicm-viewer-toolbar button:focus-visible,
-    #uicm-restore-floating:hover,
-    #uicm-restore-floating:focus-visible {
+    #uicm-viewer-toolbar button:focus-visible {
       outline: none;
       background: rgba(255, 255, 255, 0.18);
     }
@@ -308,16 +306,6 @@
       width: min(92vw, 1280px);
       height: auto;
       background: #000;
-    }
-
-    #uicm-restore-floating {
-      position: fixed;
-      right: 14px;
-      bottom: 14px;
-      z-index: 2147483647;
-      padding: 0 12px;
-      background: rgba(15, 23, 42, 0.88);
-      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.22);
     }
 
     #uicm-settings {
@@ -934,7 +922,7 @@
     actions.id = "uicm-menu-actions";
     actions.append(
       menuButton("open", "뷰어 열기", openViewer),
-      menuButton("hide", "플로팅 숨김", hideFloatingElements),
+      menuButton("original", "원본 열기", openSelectedOriginal),
       menuButton("ignore", "이 사진 제외", ignoreSelectedImage),
       menuButton("settings", "설정", openSettings),
     );
@@ -967,6 +955,17 @@
   function menuSubtitle(image) {
     const value = image?.title || filenameFromUrl(imageResourceUrl(image)) || "선택됨";
     return String(value).trim().slice(0, 48) || "선택됨";
+  }
+
+  function openSelectedOriginal() {
+    if (!STATE.selectedImage) {
+      return;
+    }
+
+    const url = imageResourceUrl(STATE.selectedImage);
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   }
 
   function ignoreSelectedImage() {
@@ -1841,62 +1840,6 @@
     return cleanExternalUrl(image?.clickUrl || image?.postUrl || image?.pageUrl || image?.permalink || "");
   }
 
-  function hideFloatingElements() {
-    restoreFloatingElements();
-
-    const candidates = Array.from(document.body.querySelectorAll("*")).filter((element) => {
-      if (!(element instanceof HTMLElement) || isOwnUi(element)) {
-        return false;
-      }
-      const style = window.getComputedStyle(element);
-      if (style.position !== "fixed" && style.position !== "sticky") {
-        return false;
-      }
-      const rect = element.getBoundingClientRect();
-      if (rect.width < 24 || rect.height < 24 || rect.width > window.innerWidth * 0.9 || rect.height > window.innerHeight * 0.9) {
-        return false;
-      }
-      const nearEdge = rect.left < 80 || rect.top < 80 || window.innerWidth - rect.right < 80 || window.innerHeight - rect.bottom < 80;
-      return nearEdge;
-    });
-
-    candidates.forEach((element) => {
-      STATE.hiddenFloating.push({ element, display: element.style.display });
-      element.style.display = "none";
-    });
-
-    if (STATE.hiddenFloating.length > 0) {
-      showRestoreButton();
-    }
-  }
-
-  function restoreFloatingElements() {
-    STATE.hiddenFloating.forEach(({ element, display }) => {
-      if (element.isConnected) {
-        element.style.display = display;
-      }
-    });
-    STATE.hiddenFloating = [];
-    if (STATE.restoreButton) {
-      STATE.restoreButton.remove();
-      STATE.restoreButton = null;
-    }
-  }
-
-  function showRestoreButton() {
-    const button = document.createElement("button");
-    button.id = "uicm-restore-floating";
-    button.type = "button";
-    button.textContent = "플로팅 복원";
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      restoreFloatingElements();
-    });
-    document.documentElement.append(button);
-    STATE.restoreButton = button;
-  }
-
   function isLargeEnough(element, minSize) {
     const rect = element.getBoundingClientRect();
     if (rect.width >= minSize && rect.height >= minSize) {
@@ -2245,7 +2188,7 @@
   }
 
   function isOwnUi(target) {
-    return target instanceof Element && Boolean(target.closest("#uicm-menu, #uicm-viewer, #uicm-restore-floating, #uicm-settings"));
+    return target instanceof Element && Boolean(target.closest("#uicm-menu, #uicm-viewer, #uicm-settings"));
   }
 
   function describeElement(target) {
@@ -2269,7 +2212,7 @@
   function iconSvg(name) {
     const paths = {
       open: '<path d="M5 5h6v2H8.41l4.3 4.29-1.42 1.42L7 8.41V11H5V5Z"></path><path d="M4 3h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v9h9V5H4Z"></path>',
-      hide: '<path d="M8 4c3.5 0 5.8 3.1 6.7 4.5-.4.6-1.1 1.5-2.1 2.3L14 12.2 12.8 13.4 2.6 3.2 3.8 2 8 6.2V6a2 2 0 0 1 2 2v.2l1.1 1.1c.5-.4.9-.8 1.2-1.2C11.4 7 9.9 6 8 6c-.5 0-1 .1-1.5.2L5 4.7C5.9 4.2 6.9 4 8 4Z"></path><path d="M1.3 8.5c.5-.8 1.7-2.4 3.4-3.4l1.5 1.5A2 2 0 0 0 8 10l1.7 1.7c-.5.2-1.1.3-1.7.3-3.5 0-5.8-3.1-6.7-4.5Z"></path>',
+      original: '<path d="M4 3h4v2H5v6h6V8h2v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"></path><path d="M10 2h4v4h-2V5.41L8.71 8.7 7.3 7.29 10.59 4H10V2Z"></path>',
       ignore: '<path d="M3 3h10v10H3V3Zm2 2v6h6V5H5Z"></path><path d="M2.8 1.4 14.6 13.2l-1.4 1.4L1.4 2.8l1.4-1.4Z"></path>',
       settings: '<path d="M7 1h2l.4 1.7c.4.1.8.3 1.1.5l1.5-.9 1 1.7-1.3 1.1c.1.4.1.8.1 1.2l1.3 1.1-1 1.7-1.5-.9c-.4.2-.7.4-1.1.5L9 15H7l-.4-1.7c-.4-.1-.8-.3-1.1-.5l-1.5.9-1-1.7 1.3-1.1c-.1-.4-.1-.8-.1-1.2L2.9 8.6l1-1.7 1.5.9c.4-.2.7-.4 1.1-.5L7 1Zm1 5a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"></path>',
     };
