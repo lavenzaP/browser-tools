@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Universal Image Click Menu
 // @namespace    https://codex.local/universal-image-click-menu
-// @version      0.5.11
-// @description  Add a Kone-like left-click image menu with viewer, floating UI hiding, and image/site exclusions.
+// @version      0.5.12
+// @description  Add a compact image action pad with viewer, floating UI hiding, and image/site exclusions.
 // @author       lavenzaP
 // @license      MIT
 // @homepageURL  https://github.com/lavenzaP/browser-tools
@@ -24,7 +24,7 @@
   const CONFIG = {
     minClickSize: 48,
     minDownloadSize: 96,
-    menuWidth: 172,
+    menuWidth: 246,
     wheelNavigateCooldownMs: 0,
     toolbarRevealY: 74,
     dragClickTolerancePx: 6,
@@ -81,43 +81,125 @@
       position: fixed;
       z-index: 2147483647;
       width: ${CONFIG.menuWidth}px;
-      padding: 6px;
-      border: 1px solid rgba(15, 23, 42, 0.14);
+      padding: 8px;
+      border: 1px solid rgba(45, 212, 191, 0.28);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.96);
-      color: #111827;
-      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
-      backdrop-filter: blur(10px);
+      background: #111827;
+      color: #f8fafc;
+      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.34);
+    }
+
+    #uicm-menu::before {
+      content: "";
+      position: absolute;
+      left: 12px;
+      top: -5px;
+      width: 10px;
+      height: 10px;
+      border-left: 1px solid rgba(45, 212, 191, 0.28);
+      border-top: 1px solid rgba(45, 212, 191, 0.28);
+      background: #111827;
+      transform: rotate(45deg);
+    }
+
+    #uicm-menu-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 28px;
+      padding: 3px 4px 8px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    #uicm-menu-title span {
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    #uicm-menu-title small {
+      min-width: 0;
+      overflow: hidden;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.2;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #uicm-menu-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      padding-top: 8px;
     }
 
     #uicm-menu button {
-      display: flex;
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
       align-items: center;
-      gap: 8px;
-      width: 100%;
-      min-height: 36px;
+      gap: 7px;
+      min-height: 48px;
       margin: 0;
-      padding: 7px 9px;
-      border: 0;
+      padding: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
       border-radius: 6px;
-      background: transparent;
+      background: rgba(15, 23, 42, 0.82);
       color: inherit;
-      font: 500 13px/1.25 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 700 12px/1.22 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       text-align: left;
       cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
     }
 
     #uicm-menu button:hover,
     #uicm-menu button:focus-visible {
       outline: none;
-      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(125, 211, 252, 0.58);
+      background: rgba(30, 41, 59, 0.96);
+      transform: translateY(-1px);
+    }
+
+    #uicm-menu button[data-uicm-menu-action="open"] {
+      border-color: rgba(45, 212, 191, 0.34);
+      background: rgba(20, 83, 75, 0.78);
+    }
+
+    #uicm-menu button[data-uicm-menu-action="ignore"] {
+      border-color: rgba(251, 191, 36, 0.32);
+    }
+
+    #uicm-menu button[data-uicm-menu-action="settings"] {
+      border-color: rgba(129, 140, 248, 0.34);
+    }
+
+    #uicm-menu button span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .uicm-icon {
       flex: 0 0 auto;
       width: 16px;
       height: 16px;
-      color: #334155;
+      color: #a7f3d0;
+    }
+
+    #uicm-menu button[data-uicm-menu-action="hide"] .uicm-icon {
+      color: #7dd3fc;
+    }
+
+    #uicm-menu button[data-uicm-menu-action="ignore"] .uicm-icon {
+      color: #fbbf24;
+    }
+
+    #uicm-menu button[data-uicm-menu-action="settings"] .uicm-icon {
+      color: #c4b5fd;
     }
 
     #uicm-viewer {
@@ -838,18 +920,25 @@
     }
   }
 
-  function showMenu(clientX, clientY) {
+  function showMenu(clientX, clientY, image) {
     closeMenu();
 
     const menu = document.createElement("div");
     menu.id = "uicm-menu";
     menu.setAttribute("role", "menu");
-    menu.append(
+    const title = document.createElement("div");
+    title.id = "uicm-menu-title";
+    title.innerHTML = `<span>이미지 도구</span><small>${escapeHtml(menuSubtitle(image))}</small>`;
+
+    const actions = document.createElement("div");
+    actions.id = "uicm-menu-actions";
+    actions.append(
       menuButton("open", "뷰어 열기", openViewer),
       menuButton("hide", "플로팅 숨김", hideFloatingElements),
       menuButton("ignore", "이 사진 제외", ignoreSelectedImage),
       menuButton("settings", "설정", openSettings),
     );
+    menu.append(title, actions);
 
     document.documentElement.append(menu);
     STATE.menu = menu;
@@ -864,6 +953,7 @@
     const button = document.createElement("button");
     button.type = "button";
     button.setAttribute("role", "menuitem");
+    button.setAttribute("data-uicm-menu-action", iconName);
     button.innerHTML = `${iconSvg(iconName)}<span>${escapeHtml(label)}</span>`;
     button.addEventListener("click", (event) => {
       event.preventDefault();
@@ -872,6 +962,11 @@
       action();
     });
     return button;
+  }
+
+  function menuSubtitle(image) {
+    const value = image?.title || filenameFromUrl(imageResourceUrl(image)) || "선택됨";
+    return String(value).trim().slice(0, 48) || "선택됨";
   }
 
   function ignoreSelectedImage() {
