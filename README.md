@@ -49,7 +49,7 @@ The scripts include `@updateURL` and `@downloadURL` metadata, so supported users
 
 ### Universal Image Click Menu
 
-`universal-image-click-menu.user.js` adds a compact left-click image action pad and in-page viewer to large images on most websites.
+`universal-image-click-menu.user.js` adds a compact gray left-click image action rail and in-page viewer to large images on most websites.
 
 - Opens a viewer with previous/next navigation, zoom, pan, and original-image open.
 - Opens the selected original image or media directly from the action pad.

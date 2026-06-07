@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Universal Image Click Menu
 // @namespace    https://codex.local/universal-image-click-menu
-// @version      0.5.13
-// @description  Add a compact image action pad with viewer, original-media opening, and image/site exclusions.
+// @version      0.5.14
+// @description  Add a compact gray image action rail with viewer, original-media opening, and image/site exclusions.
 // @author       lavenzaP
 // @license      MIT
 // @homepageURL  https://github.com/lavenzaP/browser-tools
@@ -24,7 +24,7 @@
   const CONFIG = {
     minClickSize: 48,
     minDownloadSize: 96,
-    menuWidth: 246,
+    menuWidth: 168,
     wheelNavigateCooldownMs: 0,
     toolbarRevealY: 74,
     dragClickTolerancePx: 6,
@@ -78,24 +78,24 @@
       position: fixed;
       z-index: 2147483647;
       width: ${CONFIG.menuWidth}px;
-      padding: 8px;
-      border: 1px solid rgba(45, 212, 191, 0.28);
-      border-radius: 8px;
-      background: #111827;
-      color: #f8fafc;
-      box-shadow: 0 18px 46px rgba(2, 6, 23, 0.34);
+      padding: 5px;
+      border: 1px solid rgba(229, 231, 235, 0.16);
+      border-radius: 7px;
+      background: #2f3033;
+      color: #f3f4f6;
+      box-shadow: 0 12px 30px rgba(17, 24, 39, 0.28);
     }
 
     #uicm-menu::before {
       content: "";
       position: absolute;
-      left: 12px;
+      left: 10px;
       top: -5px;
       width: 10px;
       height: 10px;
-      border-left: 1px solid rgba(45, 212, 191, 0.28);
-      border-top: 1px solid rgba(45, 212, 191, 0.28);
-      background: #111827;
+      border-left: 1px solid rgba(229, 231, 235, 0.16);
+      border-top: 1px solid rgba(229, 231, 235, 0.16);
+      background: #2f3033;
       transform: rotate(45deg);
     }
 
@@ -103,14 +103,14 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      min-height: 28px;
-      padding: 3px 4px 8px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+      gap: 6px;
+      min-height: 20px;
+      padding: 1px 4px 5px;
+      border-bottom: 1px solid rgba(229, 231, 235, 0.11);
     }
 
     #uicm-menu-title span {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       line-height: 1.2;
     }
@@ -118,8 +118,8 @@
     #uicm-menu-title small {
       min-width: 0;
       overflow: hidden;
-      color: #94a3b8;
-      font-size: 11px;
+      color: #c7c9cc;
+      font-size: 10px;
       font-weight: 600;
       line-height: 1.2;
       text-align: right;
@@ -129,24 +129,24 @@
 
     #uicm-menu-actions {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 6px;
-      padding-top: 8px;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 3px;
+      padding-top: 5px;
     }
 
     #uicm-menu button {
       display: grid;
-      grid-template-columns: 18px minmax(0, 1fr);
+      grid-template-columns: 16px minmax(0, 1fr);
       align-items: center;
-      gap: 7px;
-      min-height: 48px;
+      gap: 6px;
+      min-height: 32px;
       margin: 0;
-      padding: 8px;
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      border-radius: 6px;
-      background: rgba(15, 23, 42, 0.82);
+      padding: 5px 7px;
+      border: 1px solid rgba(229, 231, 235, 0.1);
+      border-radius: 5px;
+      background: #383a3e;
       color: inherit;
-      font: 700 12px/1.22 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 700 11px/1.18 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       text-align: left;
       cursor: pointer;
       transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
@@ -155,26 +155,9 @@
     #uicm-menu button:hover,
     #uicm-menu button:focus-visible {
       outline: none;
-      border-color: rgba(125, 211, 252, 0.58);
-      background: rgba(30, 41, 59, 0.96);
+      border-color: rgba(243, 244, 246, 0.3);
+      background: #484b51;
       transform: translateY(-1px);
-    }
-
-    #uicm-menu button[data-uicm-menu-action="open"] {
-      border-color: rgba(45, 212, 191, 0.34);
-      background: rgba(20, 83, 75, 0.78);
-    }
-
-    #uicm-menu button[data-uicm-menu-action="ignore"] {
-      border-color: rgba(251, 191, 36, 0.32);
-    }
-
-    #uicm-menu button[data-uicm-menu-action="original"] {
-      border-color: rgba(56, 189, 248, 0.34);
-    }
-
-    #uicm-menu button[data-uicm-menu-action="settings"] {
-      border-color: rgba(129, 140, 248, 0.34);
     }
 
     #uicm-menu button span {
@@ -186,21 +169,9 @@
 
     .uicm-icon {
       flex: 0 0 auto;
-      width: 16px;
-      height: 16px;
-      color: #a7f3d0;
-    }
-
-    #uicm-menu button[data-uicm-menu-action="original"] .uicm-icon {
-      color: #7dd3fc;
-    }
-
-    #uicm-menu button[data-uicm-menu-action="ignore"] .uicm-icon {
-      color: #fbbf24;
-    }
-
-    #uicm-menu button[data-uicm-menu-action="settings"] .uicm-icon {
-      color: #c4b5fd;
+      width: 14px;
+      height: 14px;
+      color: #d1d5db;
     }
 
     #uicm-viewer {
@@ -249,14 +220,31 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       font-size: 13px;
-      color: #dbeafe;
+      color: #e5e7eb;
     }
 
     #uicm-viewer-counter {
       min-width: 46px;
       text-align: center;
       font-size: 12px;
-      color: #bfdbfe;
+      color: #d1d5db;
+    }
+
+    #uicm-viewer-corner-counter {
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      z-index: 1;
+      min-width: 46px;
+      padding: 6px 9px;
+      border: 1px solid rgba(229, 231, 235, 0.18);
+      border-radius: 7px;
+      background: rgba(47, 48, 51, 0.84);
+      color: #f3f4f6;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
+      font: 800 12px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      pointer-events: none;
+      text-align: center;
     }
 
     #uicm-viewer-toolbar button {
@@ -1200,6 +1188,7 @@
         <img id="uicm-viewer-image" alt="">
         <video id="uicm-viewer-video" controls playsinline preload="metadata" hidden></video>
       </div>
+      <div id="uicm-viewer-corner-counter"></div>
     `;
 
     const stage = viewer.querySelector("#uicm-viewer-stage");
@@ -1353,6 +1342,7 @@
 
     const title = STATE.viewer.querySelector("#uicm-viewer-title");
     const counter = STATE.viewer.querySelector("#uicm-viewer-counter");
+    const cornerCounter = STATE.viewer.querySelector("#uicm-viewer-corner-counter");
     const image = STATE.viewer.querySelector("#uicm-viewer-image");
     const video = STATE.viewer.querySelector("#uicm-viewer-video");
     const prev = STATE.viewer.querySelector('[data-uicm-action="prev"]');
@@ -1360,6 +1350,7 @@
 
     title.textContent = STATE.selectedImage.title || STATE.selectedImage.url;
     counter.textContent = `${STATE.galleryIndex + 1} / ${total}`;
+    cornerCounter.textContent = `${STATE.galleryIndex + 1}/${total}`;
     setViewerMediaSource(image, video, STATE.selectedImage);
     image.alt = STATE.selectedImage.title || "";
     prev.disabled = total < 2;
