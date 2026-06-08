@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Reddit Feed Flair Badges
 // @namespace    https://codex.local/reddit-feed-flair
-// @version      0.2.2
+// @version      0.2.3
 // @description  Show visible Reddit post flair badges and optionally hide posts whose flair matches configured words.
 // @author       lavenzaP
 // @license      MIT
@@ -196,11 +196,29 @@
   createFilterUi();
   publishHiddenFlairTerms();
   scan();
+  scheduleFilterReapply();
 
   const observer = new MutationObserver(scheduleScan);
   observer.observe(document.documentElement, {
     childList: true,
     subtree: true,
+  });
+
+  window.addEventListener("pageshow", () => {
+    hiddenFlairTerms = loadHiddenFlairTerms();
+    publishHiddenFlairTerms();
+    renderFilterList();
+    scan();
+    scheduleFilterReapply();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      hiddenFlairTerms = loadHiddenFlairTerms();
+      publishHiddenFlairTerms();
+      scan();
+      scheduleFilterReapply();
+    }
   });
 
   function scheduleScan() {
@@ -246,6 +264,7 @@
 
   function processPost(post) {
     if (post.getAttribute(PROCESSED_ATTR) === "1") {
+      refreshPostFilter(post);
       return;
     }
 
@@ -690,9 +709,36 @@
 
   function refreshFlairFilters() {
     for (const post of findPosts(document)) {
-      const flairText = post.getAttribute("data-rff-flair-text") || readFlairFromPost(post).text;
-      applyFlairFilter(post, { text: flairText });
+      refreshPostFilter(post);
     }
+  }
+
+  function refreshPostFilter(post) {
+    const cachedFlairText = post.getAttribute("data-rff-flair-text");
+    if (cachedFlairText) {
+      applyFlairFilter(post, { text: cachedFlairText });
+      return;
+    }
+
+    const directFlair = readFlairFromPost(post);
+    if (directFlair.text) {
+      applyFlairFilter(post, directFlair);
+      return;
+    }
+
+    const postId = getPostId(post);
+    if (postId && flairCache.has(postId)) {
+      setBadge(post, flairCache.get(postId));
+    }
+  }
+
+  function scheduleFilterReapply() {
+    [300, 1200, 3000].forEach((delay) => {
+      window.setTimeout(() => {
+        scan();
+        refreshFlairFilters();
+      }, delay);
+    });
   }
 
   function ensureBadge(post) {
