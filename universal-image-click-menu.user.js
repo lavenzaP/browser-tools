@@ -1086,7 +1086,7 @@
       saveExcludedSites();
       renderSettings();
     }
-    setSettingsStatus(`${site} 제외 목록에 추가했습니다.`);
+    setSettingsStatus(`${site} 제외 목록에 추가했습니다. 이 사이트에서는 Alt+Shift+S로 다시 열 수 있습니다.`);
     return site;
   }
 
