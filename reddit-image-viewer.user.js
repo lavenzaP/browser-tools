@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Reddit Image Viewer
 // @namespace    https://codex.local/reddit-image-viewer
-// @version      0.1.11
+// @version      0.1.12
 // @description  Add a mockup-inspired image-first Reddit gallery and viewer overlay.
 // @author       lavenzaP
 // @license      MIT
@@ -3094,7 +3094,8 @@
     }
 
     try {
-      return new URL(value, window.location.origin).href;
+      const url = new URL(value, window.location.origin);
+      return /^https?:$/i.test(url.protocol) ? url.href : "";
     } catch (error) {
       return "";
     }

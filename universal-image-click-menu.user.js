@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Universal Image Click Menu
 // @namespace    https://codex.local/universal-image-click-menu
-// @version      0.5.14
+// @version      0.5.15
 // @description  Add a compact gray image action rail with viewer, original-media opening, and image/site exclusions.
 // @author       lavenzaP
 // @license      MIT
@@ -346,6 +346,7 @@
 
     .uicm-settings-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
     }
 
@@ -992,11 +993,12 @@
         <div id="uicm-settings-body">
           <label for="uicm-settings-site-input">제외할 사이트</label>
           <div class="uicm-settings-row">
-            <input id="uicm-settings-site-input" type="text" autocomplete="off" placeholder="example.com">
+            <input id="uicm-settings-site-input" type="text" autocomplete="off" placeholder="추가 또는 검색: example.com">
             <button type="button" data-uicm-settings-action="add-site">추가</button>
           </div>
           <div class="uicm-settings-row">
             <button type="button" data-uicm-settings-action="add-current-site">현재 사이트 추가</button>
+            <button type="button" data-uicm-settings-action="remove-current-site">현재 사이트 해제</button>
             <button type="button" data-uicm-settings-action="clear-images">사진 제외 초기화</button>
           </div>
           <p class="uicm-settings-note" id="uicm-settings-images-note"></p>
@@ -1014,6 +1016,7 @@
         addSiteFromSettingsInput();
       }
     });
+    settings.querySelector("#uicm-settings-site-input")?.addEventListener("input", renderSettings);
 
     document.documentElement.append(settings);
     STATE.settings = settings;
@@ -1047,6 +1050,8 @@
       addSiteFromSettingsInput();
     } else if (action === "add-current-site") {
       addExcludedSite(location.hostname);
+    } else if (action === "remove-current-site") {
+      removeExcludedSite(location.hostname);
     } else if (action === "remove-site") {
       removeExcludedSite(actionElement.getAttribute("data-site"));
     } else if (action === "clear-images") {
@@ -1089,6 +1094,7 @@
     const site = normalizeSitePattern(value);
     const nextSites = STATE.excludedSites.filter((entry) => entry !== site);
     if (nextSites.length === STATE.excludedSites.length) {
+      setSettingsStatus(`${site || value} 항목이 없습니다.`, true);
       return;
     }
 
@@ -1107,6 +1113,9 @@
     const empty = STATE.settings.querySelector("#uicm-settings-empty");
     const imageNote = STATE.settings.querySelector("#uicm-settings-images-note");
     const clearImages = STATE.settings.querySelector('[data-uicm-settings-action="clear-images"]');
+    const query = STATE.settings.querySelector("#uicm-settings-site-input")?.value.trim().toLowerCase() || "";
+    // ponytail: substring search is enough; add fuzzy search only if this list gets genuinely painful again.
+    const visibleSites = query ? STATE.excludedSites.filter((site) => site.includes(query)) : STATE.excludedSites;
 
     if (imageNote) {
       imageNote.textContent = `사진 제외 ${STATE.ignoredImageKeys.size}개`;
@@ -1119,8 +1128,9 @@
     }
 
     list.textContent = "";
-    empty.hidden = STATE.excludedSites.length > 0;
-    STATE.excludedSites.forEach((site) => {
+    empty.textContent = STATE.excludedSites.length > 0 ? "검색 결과가 없습니다." : "제외한 사이트가 없습니다.";
+    empty.hidden = visibleSites.length > 0;
+    visibleSites.forEach((site) => {
       const item = document.createElement("li");
       item.innerHTML = `<span>${escapeHtml(site)}</span><button type="button" data-uicm-settings-action="remove-site" data-site="${escapeHtml(site)}">제거</button>`;
       list.append(item);

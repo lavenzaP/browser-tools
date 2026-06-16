@@ -25,6 +25,7 @@ The scripts include `@updateURL` and `@downloadURL` metadata, so supported users
 
 - Works on `https://www.nexusmods.com/mods*` and `https://www.nexusmods.com/*/mods*`.
 - Lets the user configure hidden games by display name or Nexus slug.
+- Stores hidden games in `localStorage`.
 - Does not include Nexus Mods assets or official branding.
 
 ### Reddit Feed Flair Badges
