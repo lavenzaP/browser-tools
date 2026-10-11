@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Reddit Image Viewer
 // @namespace    https://codex.local/reddit-image-viewer
-// @version      0.1.12
+// @version      0.1.13
 // @description  Add a mockup-inspired image-first Reddit gallery and viewer overlay.
 // @author       lavenzaP
 // @license      MIT
@@ -19,7 +19,7 @@
 (function () {
   "use strict";
 
-  const SCRIPT_VERSION = "0.1.11";
+  const SCRIPT_VERSION = "0.1.13";
 
   const CONFIG = {
     maxPosts: 500,
@@ -66,6 +66,7 @@
     resetFeedScrollOnNextRender: false,
     filter: "",
     sort: normalizeSort(readSetting("sort", "best")),
+    timeRange: normalizeTimeRange(readSetting("timeRange", new URLSearchParams(window.location.search).get("t") || "day")),
     activeSubreddit: "",
     hiddenFlairTerms: readRffHiddenFlairTerms(),
     playing: false,
@@ -187,7 +188,8 @@
     const sourceChanged = resetListingStateIfChanged();
     const filterChanged = syncRffHiddenFlairTerms();
     let changed = false;
-    const posts = findPosts(document);
+    // The underlying page may show a different period; Top must use its own listing.
+    const posts = STATE.sort === "top" && listingUrl() ? [] : findPosts(document);
 
     posts.slice(0, CONFIG.maxPosts).forEach((postElement) => {
       if (upsertPostFromElement(postElement)) {
@@ -309,6 +311,7 @@
 
   async function flushJsonLookups() {
     STATE.jsonTimer = 0;
+    const sourceKey = STATE.feedSourceKey;
     const ids = Array.from(STATE.pendingJsonIds).slice(0, CONFIG.jsonBatchSize);
     ids.forEach((id) => {
       STATE.pendingJsonIds.delete(id);
@@ -337,6 +340,9 @@
       }
 
       const payload = await response.json();
+      if (sourceKey !== STATE.feedSourceKey) {
+        return;
+      }
       let changed = false;
       for (const child of payload?.data?.children || []) {
         const data = child?.data;
@@ -354,7 +360,9 @@
         renderSoon();
       }
     } catch (error) {
-      ids.forEach((id) => STATE.lookedUpJsonIds.delete(id));
+      if (sourceKey === STATE.feedSourceKey) {
+        ids.forEach((id) => STATE.lookedUpJsonIds.delete(id));
+      }
     }
   }
 
@@ -375,6 +383,8 @@
     STATE.feedError = "";
     STATE.feedPagesFetched = 0;
     STATE.feedSeenAfters = new Set();
+    window.clearTimeout(STATE.jsonTimer);
+    STATE.jsonTimer = 0;
     STATE.pendingJsonIds.clear();
     STATE.lookedUpJsonIds.clear();
     STATE.posts = [];
@@ -429,6 +439,11 @@
       url.pathname = pathParts.length ? `/${pathParts.join("/")}.json` : "/.json";
     }
 
+    if (STATE.sort === "top") {
+      url.searchParams.set("t", STATE.timeRange);
+    } else {
+      url.searchParams.delete("t");
+    }
     url.searchParams.delete("before");
     url.searchParams.delete("after");
     url.searchParams.delete("count");
@@ -502,8 +517,10 @@
       renderSoon();
       return changed;
     } catch (error) {
-      STATE.feedError = error?.message || String(error);
-      STATE.feedSeenAfters.delete(afterKey);
+      if (sourceKey === STATE.feedSourceKey) {
+        STATE.feedError = error?.message || String(error);
+        STATE.feedSeenAfters.delete(afterKey);
+      }
       return false;
     } finally {
       if (sourceKey === STATE.feedSourceKey) {
@@ -1140,6 +1157,7 @@
           <input type="search" data-riv-control="search" value="${escapeAttr(STATE.filter)}" placeholder="Search Reddit Images" aria-label="Search Reddit images">
         </label>
         <div class="riv-top-actions">
+          ${renderTimeRangeControl()}
           <button class="riv-icon-button ${STATE.uiSettingsOpen ? "is-active" : ""}" type="button" aria-label="Display settings" data-riv-action="toggle-ui-settings">${icon("settings")}</button>
           <button class="riv-icon-button" type="button" aria-label="Refresh images" data-riv-action="refresh">${icon("refresh")}</button>
           <button class="riv-icon-button riv-notification" type="button" aria-label="Notifications">${icon("bell")}<span>3</span></button>
@@ -1184,6 +1202,24 @@
 
   function renderFilterButton(iconName, label, active, sort) {
     return `<button class="riv-side-button ${active ? "is-active" : ""}" type="button" data-riv-action="set-sort" data-sort="${escapeAttr(sort)}">${icon(iconName)}<span>${escapeHtml(label)}</span></button>`;
+  }
+
+  function renderTimeRangeControl() {
+    if (STATE.sort !== "top" || !listingUrl()) {
+      return "";
+    }
+
+    const options = [
+      ["hour", "Past hour"],
+      ["day", "Past 24 hours"],
+      ["week", "Past week"],
+      ["month", "Past month"],
+      ["year", "Past year"],
+      ["all", "All time"],
+    ];
+    return `<select class="riv-select riv-time-range" data-riv-control="time-range" aria-label="Top time range" title="Top time range">
+      ${options.map(([value, label]) => `<option value="${value}" ${STATE.timeRange === value ? "selected" : ""}>${label}</option>`).join("")}
+    </select>`;
   }
 
   function renderSubredditList() {
@@ -1883,6 +1919,14 @@
     ensureMoreFeed("sort-change");
   }
 
+  function setFeedTimeRange(timeRange) {
+    STATE.timeRange = normalizeTimeRange(timeRange);
+    writeSetting("timeRange", STATE.timeRange);
+    resetListingStateIfChanged(true);
+    renderApp();
+    ensureMoreFeed("time-range-change");
+  }
+
   function toggleSettingsPanel() {
     const panel = STATE.root.querySelector(".riv-settings-panel");
     if (panel) {
@@ -1946,6 +1990,7 @@
         appOpen: STATE.appOpen,
         feedLayout: STATE.feedLayout,
         sort: STATE.sort,
+        timeRange: STATE.timeRange,
         filter: STATE.filter,
         activeSubreddit: STATE.activeSubreddit,
         selectedKey: STATE.selectedKey,
@@ -2309,6 +2354,11 @@
     const name = control.getAttribute("data-riv-control");
     if (name === "sort") {
       setFeedSort(control.value || "best");
+      return;
+    }
+
+    if (name === "time-range") {
+      setFeedTimeRange(control.value);
       return;
     }
 
@@ -3224,6 +3274,10 @@
     return ["best", "hot", "new", "top", "rising"].includes(sort) ? sort : "best";
   }
 
+  function normalizeTimeRange(timeRange) {
+    return ["hour", "day", "week", "month", "year", "all"].includes(timeRange) ? timeRange : "day";
+  }
+
   function normalizeFeedLayout(layout) {
     return layout === "grid" ? "grid" : "horizontal";
   }
@@ -3667,7 +3721,7 @@
     .riv-topbar {
       grid-column: 2 / span 2;
       display: grid;
-      grid-template-columns: 190px minmax(260px, 560px) 1fr;
+      grid-template-columns: 190px minmax(0, 560px) auto;
       align-items: center;
       gap: 18px;
       min-width: 0;
@@ -3714,6 +3768,11 @@
       justify-content: flex-end;
       gap: 10px;
       min-width: 0;
+    }
+
+    .riv-time-range {
+      width: auto;
+      flex-shrink: 0;
     }
 
     .riv-icon-button,
