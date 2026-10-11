@@ -44,6 +44,7 @@ The scripts include `@updateURL` and `@downloadURL` metadata, so supported users
 - Works on `www.reddit.com`, `old.reddit.com`, and `sh.reddit.com`.
 - Scans the rendered Reddit feed for image and video posts.
 - Requests Reddit's same-origin listing JSON from the current page to load more posts the user can already access.
+- When sorting by Top, the toolbar offers past hour, 24 hours, week, month, year, or all time. The selected period is saved in `localStorage` and applies to subsequent pages too.
 - Does not use `GM_xmlhttpRequest`, proxies, CORS bypasses, login bypasses, paywall bypasses, or DRM/access-control bypasses.
 - Does not provide image or video download features. The only download action is an optional debug JSON log for troubleshooting.
 - Can hand off media to `universal-image-click-menu.user.js` when that script is also installed.
@@ -83,6 +84,12 @@ When adding a new userscript:
 
 ```powershell
 node --check .\script-name.user.js
+```
+
+Run the Reddit Image Viewer Top-period regression checks with:
+
+```powershell
+node --test .\tests\reddit-image-viewer-top.test.cjs
 ```
 
 ## License
